@@ -20,7 +20,7 @@ package notificationsapiv1
 import (
 	"fmt"
 
-	"github.com/IBM/go-sdk-core/v3/core"
+	"github.com/IBM/go-sdk-core/core"
 	common "github.com/ibm-cloud-security/security-advisor-sdk-go/common"
 )
 

@@ -22,10 +22,10 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	"github.com/IBM/go-sdk-core/v3/core"
+	"github.com/IBM/go-sdk-core/core"
+	"github.com/ibm-cloud-security/security-advisor-sdk-go/notificationsapiv1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/ibm-cloud-security/security-advisor-sdk-go/notificationsapiv1"
 )
 
 var _ = Describe(`NotificationsApiV1`, func() {

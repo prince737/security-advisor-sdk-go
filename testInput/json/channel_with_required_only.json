@@ -1,0 +1,6 @@
+{
+    "name": "sdkTest_channel",
+    "type": "Webhook",
+    "endpoint": "https://example.com",
+    "account_id": "4a1961206a5542b6aad0d11fd226cea7"
+  }

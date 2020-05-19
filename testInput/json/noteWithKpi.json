@@ -1,0 +1,15 @@
+{
+    "provider_id":"sdktest",
+	"short_description":"sdk test findings",
+	"long_description":"sdk test findings",
+	"kind":"KPI",
+	"id":"sdk_note_id1_kpi",
+	"reported_by":{
+        "id":"1",
+        "title":"test1",
+        "url":"www.test.com"
+    },
+    "kpi":{
+        "aggregation_type": "SUM"
+    }
+}

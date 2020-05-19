@@ -1,0 +1,30 @@
+{
+    "context": {
+      "resource_name": "mycluster",
+      "resource_type": "cluster"
+    },
+    "description": "new custom tool findings",
+    "finding": {
+      "next_steps": [
+        {
+          "title": "Custom tool finding"
+        }
+      ],
+      "severity": "HIGH"
+    },
+    "id": "sdk_provider_occ_occ_id1",
+    "kind": "FINDING",
+    "long_description": "new custom tool finding",
+    "message": "message",
+    "name": "4a1961206a5542b6aad0d11fd226cea7/providers/sdktestProviderOcc/occurrences/sdk_provider_occ_occ_id1",
+    "note_name": "4a1961206a5542b6aad0d11fd226cea7/providers/sdktestProviderOcc/notes/sdk_provider_occ_note_id1",
+    "provider_id": "sdktestProviderOcc",
+    "provider_name": "4a1961206a5542b6aad0d11fd226cea7/providers/sdktestProviderOcc",
+    "remediation": "steps for remediation",
+    "reported_by": {
+      "id": "custom-note",
+      "title": "Custom tool"
+    },
+    "short_description": "new custom tool finding",
+    "resource_url": "https://gcr.io/provider/image@sha256:foo"
+}

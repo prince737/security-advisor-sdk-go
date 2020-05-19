@@ -1,0 +1,8 @@
+{
+    "name": "sdkTest_channel_severity",
+    "type": "Webhook",
+    "description": "channel with alert source",
+    "endpoint": "https://example.com",
+    "account_id": "4a1961206a5542b6aad0d11fd226cea7",
+    "alertSource": [{"provider_name": "VA", "finding_types": ["Allllll"]}, {"provider_name": "CERT", "finding_types": ["expired_cert", "expiring_1day_cert"]}]
+  }

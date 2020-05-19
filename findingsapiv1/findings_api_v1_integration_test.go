@@ -11,11 +11,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/IBM/go-sdk-core/v3/core"
+	"github.com/IBM/go-sdk-core/core"
 	"github.com/go-openapi/strfmt"
+	"github.com/ibm-cloud-security/security-advisor-sdk-go/findingsapiv1"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
-	"github.com/ibm-cloud-security/security-advisor-sdk-go/findingsapiv1"
 )
 
 var apiKey = os.Getenv("apiKey")

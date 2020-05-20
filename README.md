@@ -306,3 +306,9 @@ go tool cover -html=integration.out
 ## License
 
 The ibm-cloud-security-advisor-sdk-go is released under the Apache 2.0 license. The license's full text can be found in [LICENSE](LICENSE).
+
+
+## Open Issues
+
+Currently  if `go get` is used as mode to download the module - GOPATH might face issues relared to IBM SDK core module.
+Advised method is to use  go mdoules.

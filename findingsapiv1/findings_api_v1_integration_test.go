@@ -13,14 +13,15 @@ import (
 
 	"github.com/IBM/go-sdk-core/v3/core"
 	"github.com/go-openapi/strfmt"
+	"github.com/ibm-cloud-security/security-advisor-sdk-go/findingsapiv1"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/assert"
-	"github.com/ibm-cloud-security/security-advisor-sdk-go/findingsapiv1"
 )
 
 var apiKey = os.Getenv("apiKey")
 var accountID = os.Getenv("accountID")
 var URL = os.Getenv("URL")
+var findingsServiceURL = os.Getenv("findingsServiceURL")
 var inputFilePath = "../testInput/json"
 
 var (
@@ -44,6 +45,7 @@ func createNoteHelper(t *testing.T, path string) (result *findingsapiv1.ApiNote,
 
 	query, err := ioutil.ReadFile(path)
 	if err != nil {
+		fmt.Println("here")
 		t.Fatal(err)
 	}
 
@@ -52,9 +54,9 @@ func createNoteHelper(t *testing.T, path string) (result *findingsapiv1.ApiNote,
 	createNoteOptions.SetHeaders(headers)
 	createNoteOptions.SetAccountID(accountID)
 
-	result, resp, operationErr := service.CreateNote(createNoteOptions)
+	result, _, operationErr := service.CreateNote(createNoteOptions)
 	if operationErr != nil {
-		fmt.Println(resp.Result)
+		fmt.Println(operationErr)
 		t.Log("Failed to create note: ", operationErr)
 	}
 
@@ -62,7 +64,7 @@ func createNoteHelper(t *testing.T, path string) (result *findingsapiv1.ApiNote,
 
 }
 
-func createOccurrenceHelper(t *testing.T, path string) (*findingsapiv1.ApiOccurrence, *findingsapiv1.CreateOccurrenceOptions) {
+func createOccurrenceHelper(t *testing.T, path string, noteID string) (*findingsapiv1.ApiOccurrence, *findingsapiv1.CreateOccurrenceOptions) {
 	headers := make(map[string]string)
 	headers["Content-Type"] = "application/json"
 
@@ -75,10 +77,11 @@ func createOccurrenceHelper(t *testing.T, path string) (*findingsapiv1.ApiOccurr
 	json.Unmarshal([]byte(query), &createOccurrenceOptions)
 	createOccurrenceOptions.SetHeaders(headers)
 	createOccurrenceOptions.SetAccountID(accountID)
+	noteName := accountID + "/providers/" + *createOccurrenceOptions.ProviderID + "/notes/" + noteID
+	createOccurrenceOptions.NoteName = &noteName
 
-	result, resp, operationErr := service.CreateOccurrence(createOccurrenceOptions)
+	result, _, operationErr := service.CreateOccurrence(createOccurrenceOptions)
 	if operationErr != nil {
-		fmt.Println(resp.Result)
 		t.Log("Failed to create occurrence: ", operationErr)
 	}
 
@@ -127,7 +130,7 @@ func TestServiceSetupAndSetUrl(t *testing.T) {
 		Authenticator: authenticator,
 	})
 	if testService == nil {
-		t.Fatal("Expected service to not be nil, but got: ", service)
+		t.Fatal("Expected service to not be nil, but got: ", err)
 	}
 
 	testService.SetServiceURL("https://dev-dallas.secadvisor.test.cloud.ibm.com/findings")
@@ -148,11 +151,7 @@ func TestServiceSetup(t *testing.T) {
 		Authenticator: authenticator,
 	})
 	if service == nil {
-		t.Fatal("Expected service to not be nil, but got: ", service)
-	}
-
-	if err != nil {
-		t.Fatal("expected testServiceErr to be nil, but got: ", err)
+		t.Fatal("Expected service to not be nil, but got: ", err)
 	}
 
 }
@@ -161,7 +160,7 @@ func TestPostGraph(t *testing.T) {
 	fmt.Println("creating new note")
 	_, createNoteOptions := createNoteHelper(t, inputFilePath+"/note.json")
 	fmt.Println("creating new occurrence")
-	_, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occurrence.json")
+	_, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occurrence.json", *createNoteOptions.ID)
 
 	headers := make(map[string]string)
 	headers["Content-Type"] = "application/graphql"
@@ -234,8 +233,8 @@ func TestListProvider(t *testing.T) {
 		listProvidersOptions.SetAccountID(accountID)
 		listProvidersOptions.SetLimit(2)
 		listProvidersOptions.SetSkip(0)
-		listProvidersOptions.SetStartProviderID("sd")
-		listProvidersOptions.SetEndProviderID("se")
+		listProvidersOptions.SetStartProviderID("sec_")
+		listProvidersOptions.SetEndProviderID("sf")
 
 		res, _, err = service.ListProviders(listProvidersOptions)
 		if err != nil {
@@ -268,7 +267,7 @@ func TestListProviderOccurrences(t *testing.T) {
 	fmt.Println("Creating note....")
 	_, createNoteOptions := createNoteHelper(t, inputFilePath+"/providerNote.json")
 	fmt.Println("Creating occurrence....")
-	_, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/providerOccurrence.json")
+	_, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/providerOccurrence.json", *createNoteOptions.ID)
 
 	//Test using required only
 	fmt.Println("listing occurrences....")
@@ -320,13 +319,14 @@ func TestListNoteOccurrences(t *testing.T) {
 	_, createNoteOptions := createNoteHelper(t, inputFilePath+"/note.json")
 
 	fmt.Println("Creating occurrence....")
-	_, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/noteOccurrence.json")
+	_, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/noteOccurrence.json", *createNoteOptions.ID)
 
 	fmt.Println("listing occurrences using required only....")
 	listNoteOccurrencesOptions := service.NewListNoteOccurrencesOptions(accountID, *(createOccurrenceOptions.ProviderID), *(createNoteOptions.ID))
 	res, _, err = service.ListNoteOccurrences(listNoteOccurrencesOptions)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
+	fmt.Println(*createOccurrenceOptions.ProviderID)
 	assert.Equal(t, *(res.Occurrences[0].ID), *(createOccurrenceOptions.ID))
 	assert.Equal(t, *(res.Occurrences[0].NoteName), accountID+"/providers/"+*createNoteOptions.ProviderID+"/notes/"+*createNoteOptions.ID)
 
@@ -368,7 +368,7 @@ func TestGetOccurrence(t *testing.T) {
 	fmt.Println("creating new note for delete")
 	_, createNoteOptions := createNoteHelper(t, inputFilePath+"/note.json")
 	fmt.Println("creating new occurrence for delete")
-	result, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occurrence.json")
+	result, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occurrence.json", *createNoteOptions.ID)
 
 	assert.NotNil(t, result)
 
@@ -410,7 +410,7 @@ func TestCreateOccurrence(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, res)
 
-	//Test ListProviderOccurrence without required options
+	//Test CreateOccurrence without required options
 	var options findingsapiv1.CreateOccurrenceOptions
 	res, _, err = service.CreateOccurrence(&options)
 	assert.NotNil(t, err)
@@ -420,7 +420,7 @@ func TestCreateOccurrence(t *testing.T) {
 	_, createNoteOptions := createNoteHelper(t, inputFilePath+"/note.json")
 
 	fmt.Println("Creating occurrence")
-	result, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occurrence.json")
+	result, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occurrence.json", *createNoteOptions.ID)
 
 	assert.NotNil(t, result)
 	fmt.Println("Created occurrence")
@@ -437,8 +437,11 @@ func TestCreateOccurrence(t *testing.T) {
 	deleteOccurrenceHelper(t, createOccurrenceOptions)
 
 	//Test create occurrence using setters
-	noteName := "4a1961206a5542b6aad0d11fd226cea7/providers/sdktest/notes/sdk_note_id1"
-	createOptions := service.NewCreateOccurrenceOptions(accountID, *createNoteOptions.ProviderID, noteName, "FINDING", "sdk_occ_id1")
+	occID := "sec_advisor_202X_occ_id1"
+	noteID := "sec_advisor_202X_note"
+	providerID := "sec_advisor_202X_provider"
+	noteName := accountID + "/providers/" + providerID + "/notes/" + noteID
+	createOptions := service.NewCreateOccurrenceOptions(accountID, *createNoteOptions.ProviderID, noteName, "FINDING", occID)
 	createTime := strfmt.DateTime(time.Now())
 	region := "us-south"
 	context := findingsapiv1.Context{Region: &region}
@@ -452,7 +455,7 @@ func TestCreateOccurrence(t *testing.T) {
 	createOptions.SetProviderID(*createNoteOptions.ProviderID)
 	createOptions.SetNoteName(noteName)
 	createOptions.SetKind("FINDING")
-	createOptions.SetID("sdk_occ_id1")
+	createOptions.SetID(occID)
 	createOptions.SetResourceURL("https://ss.ss")
 	createOptions.SetRemediation("steps for remediation")
 	createOptions.SetCreateTime(&createTime)
@@ -461,9 +464,9 @@ func TestCreateOccurrence(t *testing.T) {
 	createOptions.SetUpdateTime(&createTime)
 	createOptions.SetReplaceIfExists(true)
 	fmt.Println("Creating occurrence")
-	result, _, operationErr := service.CreateOccurrence(createOptions)
+	result, resp, operationErr := service.CreateOccurrence(createOptions)
 	if operationErr != nil {
-		fmt.Println(operationErr)
+		fmt.Println(resp.Result)
 		t.Fatal("Failed to create occurrence: ", operationErr)
 	}
 	assert.Equal(t, *(result.ID), *(createOptions.ID))
@@ -497,7 +500,7 @@ func TestDeleteOccurrence(t *testing.T) {
 	_, createNoteOptions := createNoteHelper(t, inputFilePath+"/note.json")
 
 	fmt.Println("Creating new occurrence for delete....")
-	result, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occurrence.json")
+	result, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occurrence.json", *createNoteOptions.ID)
 	if result == nil {
 		t.Fatal("Failed to create occurrence")
 	}
@@ -512,7 +515,7 @@ func TestDeleteOccurrence(t *testing.T) {
 
 	//Test Delete occ using setters
 	fmt.Println("Creating new occurrence for delete....")
-	result, createOccurrenceOptions = createOccurrenceHelper(t, inputFilePath+"/occurrence.json")
+	result, createOccurrenceOptions = createOccurrenceHelper(t, inputFilePath+"/occurrence.json", *createNoteOptions.ID)
 	assert.NotNil(t, result)
 	if result == nil {
 		t.Fatal("Failed to create occurrence")
@@ -551,7 +554,7 @@ func TestUpdateOccurrence(t *testing.T) {
 	_, createNoteOptions := createNoteHelper(t, inputFilePath+"/noteWithKpi.json")
 
 	fmt.Println("Creating new occurrence for edit....")
-	_, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occKpi.json")
+	_, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occKpi.json", *createNoteOptions.ID)
 
 	query, err := ioutil.ReadFile(inputFilePath + "/editedKpiOcc.json")
 	if err != nil {
@@ -569,6 +572,9 @@ func TestUpdateOccurrence(t *testing.T) {
 	kpi.Total = &total
 
 	updateOccurrenceOptions.SetKpi(kpi)
+	noteName := accountID + "/providers/" + *updateOccurrenceOptions.ProviderID + "/notes/" + *createNoteOptions.ID
+	updateOccurrenceOptions.NoteName = &noteName
+
 	fmt.Println("Editing occurrence....")
 	result, _, operationErr := service.UpdateOccurrence(updateOccurrenceOptions)
 	if operationErr != nil {
@@ -599,11 +605,14 @@ func TestUpdateOccurrenceUsingSetters(t *testing.T) {
 	_, createNoteOptions := createNoteHelper(t, inputFilePath+"/note.json")
 
 	fmt.Println("Creating new occurrence for edit....")
-	_, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occurrence.json")
+	_, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occurrence.json", *createNoteOptions.ID)
 
 	//Setup updated data
-	noteName := accountID + "/providers/sdktest/notes/sdk_note_id1"
-	updateOccurrenceOptions := service.NewUpdateOccurrenceOptions(accountID, "sdktest", "sdk_occ_id1", noteName, "FINDING", "sdk_occ_id1")
+	noteID := *createNoteOptions.ID
+	providerID := *createNoteOptions.ProviderID
+	occID := *createOccurrenceOptions.ID
+	noteName := accountID + "/providers/" + providerID + "/notes/" + noteID
+	updateOccurrenceOptions := service.NewUpdateOccurrenceOptions(accountID, providerID, occID, noteName, "FINDING", occID)
 	time := strfmt.DateTime(time.Now())
 	remediationTitle := "title"
 	remediationURL := "https://hello.world"
@@ -614,11 +623,11 @@ func TestUpdateOccurrenceUsingSetters(t *testing.T) {
 	resourceName := "us-south"
 	context := findingsapiv1.Context{ResourceName: &resourceName}
 	updateOccurrenceOptions.SetAccountID(accountID)
-	updateOccurrenceOptions.SetProviderID("sdktest")
-	updateOccurrenceOptions.SetOccurrenceID("sdk_occ_id1")
+	updateOccurrenceOptions.SetProviderID(providerID)
+	updateOccurrenceOptions.SetOccurrenceID(occID)
 	updateOccurrenceOptions.SetNoteName(noteName)
 	updateOccurrenceOptions.SetKind("FINDING")
-	updateOccurrenceOptions.SetID("sdk_occ_id1")
+	updateOccurrenceOptions.SetID(occID)
 	updateOccurrenceOptions.SetResourceURL("https://ss.ss")
 	updateOccurrenceOptions.SetRemediation("remediation")
 	updateOccurrenceOptions.SetCreateTime(&time)
@@ -627,8 +636,9 @@ func TestUpdateOccurrenceUsingSetters(t *testing.T) {
 	updateOccurrenceOptions.SetFinding(&finding)
 
 	fmt.Println("Editing occurrence....")
-	result, _, operationErr := service.UpdateOccurrence(updateOccurrenceOptions)
+	result, resp, operationErr := service.UpdateOccurrence(updateOccurrenceOptions)
 	if operationErr != nil {
+		fmt.Println(resp.Result)
 		fmt.Println("Failed to edit occurrence: ", operationErr)
 	}
 
@@ -661,41 +671,37 @@ func TestGetAllNote(t *testing.T) {
 	assert.Nil(t, res)
 
 	fmt.Println("creating notes")
-	result, createNoteOptions := createNoteHelper(t, inputFilePath+"/note.json")
-	cardResult, createCardOptions := createNoteHelper(t, inputFilePath+"/card.json")
+	_, createNoteOptions := createNoteHelper(t, inputFilePath+"/note.json")
+	_, createCardOptions := createNoteHelper(t, inputFilePath+"/card.json")
 
-	assert.NotNil(t, result)
-	assert.NotNil(t, cardResult)
-	if result != nil && cardResult != nil {
-		fmt.Println("created notes")
-		//Test using required fileds
-		getNotesOptions := service.NewListNotesOptions(accountID, *(createNoteOptions.ProviderID))
-		res, _, err := service.ListNotes(getNotesOptions)
+	fmt.Println("created notes")
+	//Test using required fileds
+	getNotesOptions := service.NewListNotesOptions(accountID, *(createNoteOptions.ProviderID))
+	res, _, err = service.ListNotes(getNotesOptions)
 
-		var noteIds [2]string
-		noteIds[0] = *res.Notes[0].ID
-		noteIds[1] = *res.Notes[1].ID
+	var noteIds [2]string
+	noteIds[0] = *res.Notes[0].ID
+	noteIds[1] = *res.Notes[1].ID
 
-		assert.Nil(t, err)
-		assert.NotNil(t, res)
-		assert.Contains(t, noteIds, *(createCardOptions.ID))
-		assert.Contains(t, noteIds, *(createNoteOptions.ID))
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.Contains(t, noteIds, *(createCardOptions.ID))
+	assert.Contains(t, noteIds, *(createNoteOptions.ID))
 
-		//Test using setters
-		var listOptions findingsapiv1.ListNotesOptions
-		listOptions.SetAccountID(accountID)
-		listOptions.SetProviderID(*createNoteOptions.ProviderID)
-		listOptions.SetHeaders(headers)
-		listOptions.SetPageSize(10)
-		listOptions.SetPageToken(*res.NextPageToken)
-		res, _, err = service.ListNotes(&listOptions)
-		assert.Nil(t, err)
-		assert.NotNil(t, res)
+	//Test using setters
+	var listOptions findingsapiv1.ListNotesOptions
+	listOptions.SetAccountID(accountID)
+	listOptions.SetProviderID(*createNoteOptions.ProviderID)
+	listOptions.SetHeaders(headers)
+	listOptions.SetPageSize(10)
+	listOptions.SetPageToken(*res.NextPageToken)
+	res, _, err = service.ListNotes(&listOptions)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
 
-		fmt.Println("Cleaning up notes....")
-		deleteNoteHelper(t, createNoteOptions)
-		deleteNoteHelper(t, createCardOptions)
-	}
+	fmt.Println("Cleaning up notes....")
+	deleteNoteHelper(t, createNoteOptions)
+	deleteNoteHelper(t, createCardOptions)
 }
 
 func TestGetNote(t *testing.T) {
@@ -714,37 +720,34 @@ func TestGetNote(t *testing.T) {
 	assert.Nil(t, res)
 
 	result, createNoteOptions := createNoteHelper(t, inputFilePath+"/note.json")
-	assert.NotNil(t, result)
-	if result != nil {
-		assert.Equal(t, *(result.ID), *(createNoteOptions.ID))
-		assert.Equal(t, *(result.ShortDescription), *(createNoteOptions.ShortDescription))
+	assert.Equal(t, *(result.ID), *(createNoteOptions.ID))
+	assert.Equal(t, *(result.ShortDescription), *(createNoteOptions.ShortDescription))
 
-		getNotesOptions := service.NewGetNoteOptions(accountID, *(createNoteOptions.ProviderID), *(createNoteOptions.ID))
-		res, _, err := service.GetNote(getNotesOptions)
+	getNotesOptions := service.NewGetNoteOptions(accountID, *(createNoteOptions.ProviderID), *(createNoteOptions.ID))
+	res, _, err = service.GetNote(getNotesOptions)
 
-		assert.Nil(t, err)
-		assert.NotNil(t, res)
-		assert.Equal(t, *(res.ID), *(createNoteOptions.ID))
-		assert.Equal(t, *(res.ShortDescription), *(createNoteOptions.ShortDescription))
-		assert.Equal(t, *(res.Kind), *(createNoteOptions.Kind))
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, *(res.ID), *(createNoteOptions.ID))
+	assert.Equal(t, *(res.ShortDescription), *(createNoteOptions.ShortDescription))
+	assert.Equal(t, *(res.Kind), *(createNoteOptions.Kind))
 
-		//Test get with setters
-		getOptions := service.NewGetNoteOptions("test", "test", "test")
-		assert.Equal(t, *getOptions.AccountID, "test")
-		getOptions.SetHeaders(headers)
-		getOptions.SetAccountID(accountID)
-		getOptions.SetNoteID(*createNoteOptions.ID)
-		getOptions.SetProviderID(*createNoteOptions.ProviderID)
-		res, _, err = service.GetNote(getOptions)
-		assert.Nil(t, err)
-		assert.NotNil(t, res)
-		assert.Equal(t, *(res.ID), *(createNoteOptions.ID))
-		assert.Equal(t, *(res.ShortDescription), *(createNoteOptions.ShortDescription))
-		assert.Equal(t, *(res.Kind), *(createNoteOptions.Kind))
+	//Test get with setters
+	getOptions := service.NewGetNoteOptions("test", "test", "test")
+	assert.Equal(t, *getOptions.AccountID, "test")
+	getOptions.SetHeaders(headers)
+	getOptions.SetAccountID(accountID)
+	getOptions.SetNoteID(*createNoteOptions.ID)
+	getOptions.SetProviderID(*createNoteOptions.ProviderID)
+	res, _, err = service.GetNote(getOptions)
+	assert.Nil(t, err)
+	assert.NotNil(t, res)
+	assert.Equal(t, *(res.ID), *(createNoteOptions.ID))
+	assert.Equal(t, *(res.ShortDescription), *(createNoteOptions.ShortDescription))
+	assert.Equal(t, *(res.Kind), *(createNoteOptions.Kind))
 
-		fmt.Println("Cleaning up note....")
-		deleteNoteHelper(t, createNoteOptions)
-	}
+	fmt.Println("Cleaning up note....")
+	deleteNoteHelper(t, createNoteOptions)
 }
 
 func TestPostNote(t *testing.T) {
@@ -864,13 +867,11 @@ func TestPostCardUsingSetters(t *testing.T) {
 	createNoteOptions.SetShared(false)
 
 	result, _, err := service.CreateNote(createNoteOptions)
-
 	assert.NotNil(t, result)
 	assert.Nil(t, err)
-	if result != nil {
-		fmt.Println("Cleaning up note....")
-		deleteNoteHelper(t, createNoteOptions)
-	}
+
+	fmt.Println("Cleaning up note....")
+	deleteNoteHelper(t, createNoteOptions)
 }
 
 func TestEditNote(t *testing.T) {
@@ -888,8 +889,6 @@ func TestEditNote(t *testing.T) {
 
 	fmt.Println("Creating new note for edit....")
 	result, createNoteOptions := createNoteHelper(t, inputFilePath+"/note.json")
-
-	assert.NotNil(t, result)
 
 	if result != nil {
 		fmt.Println("Created new note for edit....")
@@ -915,12 +914,12 @@ func TestEditNote(t *testing.T) {
 		fmt.Println("Created new note for edit....")
 		updateNoteOptions.SetHeaders(headers)
 		updateNoteOptions.SetAccountID(accountID)
-		updateNoteOptions.SetProviderID("sdktest")
-		updateNoteOptions.SetNoteID("providers/sdktest/notes/sdk_note_id1")
+		updateNoteOptions.SetProviderID("sec_advisor_202X_provider")
+		updateNoteOptions.SetNoteID("providers/sec_advisor_202X_provider/notes/" + *createNoteOptions.ID)
 		updateNoteOptions.SetShortDescription("sdk test findings edited")
 		updateNoteOptions.SetLongDescription("sdk test findings edited")
 		updateNoteOptions.SetKind("FINDING")
-		updateNoteOptions.SetID("sdk_note_id1")
+		updateNoteOptions.SetID(*createNoteOptions.ID)
 		updateNoteOptions.SetRelatedURL([]findingsapiv1.ApiNoteRelatedURL{related})
 		updateNoteOptions.SetReportedBy(reportedBy)
 		updateNoteOptions.SetFinding(finding)
@@ -947,17 +946,12 @@ func TestEditNote(t *testing.T) {
 	}
 	fmt.Println("Deleting note....")
 	var deleteOptions = service.NewDeleteNoteOptions(*(createNoteOptions.AccountID), *(createNoteOptions.ProviderID), *(createNoteOptions.ID))
-	response, err := service.DeleteNote(deleteOptions)
-
-	assert.Nil(t, err)
-	assert.Equal(t, response.StatusCode, 200)
+	service.DeleteNote(deleteOptions)
 }
 
 func TestEditKpiNote(t *testing.T) {
 	fmt.Println("Creating new note for edit....")
 	result, createNoteOptions := createNoteHelper(t, inputFilePath+"/noteWithKpi.json")
-
-	assert.NotNil(t, result)
 
 	if result != nil {
 		fmt.Println("Created new note for edit....")
@@ -967,9 +961,9 @@ func TestEditKpiNote(t *testing.T) {
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
 
-		providerId := "sdktest"
-		noteId := "sdk_note_id1_kpi"
-		ID := "sdk_note_id1_kpi"
+		providerId := "sec_advisor_202X_provider"
+		noteId := "sec_advisor_202X_kpi_note"
+		ID := "sec_advisor_202X_kpi_note"
 		longDesc := "long desc"
 		shortDesc := "short desc"
 		kind := "KPI"
@@ -997,13 +991,10 @@ func TestEditKpiNote(t *testing.T) {
 		assert.Equal(t, *(result.LongDescription), *(updateNoteOptions.LongDescription))
 		assert.Equal(t, *(result.Kind), *(updateNoteOptions.Kind))
 
-		fmt.Println("Deleting note....")
-		var deleteOptions = service.NewDeleteNoteOptions(*(createNoteOptions.AccountID), *(createNoteOptions.ProviderID), *(createNoteOptions.ID))
-		response, err := service.DeleteNote(deleteOptions)
-
-		assert.Nil(t, err)
-		assert.Equal(t, response.StatusCode, 200)
 	}
+	fmt.Println("Deleting note....")
+	var deleteOptions = service.NewDeleteNoteOptions(*(createNoteOptions.AccountID), *(createNoteOptions.ProviderID), *(createNoteOptions.ID))
+	service.DeleteNote(deleteOptions)
 }
 
 func TestGetOccurrenceNote(t *testing.T) {
@@ -1024,7 +1015,7 @@ func TestGetOccurrenceNote(t *testing.T) {
 	res, createNoteOptions := createNoteHelper(t, inputFilePath+"/note.json")
 
 	fmt.Println("Creating occurrence")
-	result, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occurrence.json")
+	result, createOccurrenceOptions := createOccurrenceHelper(t, inputFilePath+"/occurrence.json", *createNoteOptions.ID)
 
 	assert.NotNil(t, result)
 	fmt.Println("Created occurrence")

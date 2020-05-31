@@ -1,9 +1,9 @@
 {
-    "provider_id":"sdktest",
+    "provider_id":"sec_advisor_202X_provider",
 	"short_description":"sdk test findings",
 	"long_description":"sdk test findings",
 	"kind":"KPI",
-	"id":"sdk_note_id1_kpi",
+	"id":"sec_advisor_202X_kpi_note",
 	"reported_by":{
         "id":"1",
         "title":"test1",

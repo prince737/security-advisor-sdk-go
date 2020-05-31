@@ -1,7 +1,7 @@
 {
     "kind": "CARD",
-    "provider_id": "sdktest",
-    "id": "sdk_note_id1_card",
+    "provider_id": "sec_advisor_202X_provider",
+    "id": "sec_advisor_202X_note_id1_card",
     "short_description": "abc",
     "long_description": "abc",
     "reported_by": {
@@ -16,7 +16,7 @@
                 "text": "This should not be here",
                 "value_type": {
                     "finding_note_names": [
-                        "providers/sdktest/notes/sdk_note_id1"
+                        "providers/sec_advisor_202X_provider/notes/sec_advisor_202X_note"
                     ],
                     "kind": "FINDING_COUNT"
                 }
@@ -30,14 +30,14 @@
                     {
                         "kind": "FINDING_COUNT",
                         "finding_note_names": [
-                            "providers/custom-provider/notes/custom-note"
+                            "providers/sec_advisor_202X_provider/notes/sec_advisor_202X_note"
                         ],
                         "text": "Vulnerabilities"
                     },
                     {
                         "kind": "FINDING_COUNT",
                         "finding_note_names": [
-                            "providers/custom-provider/notes/custom-note-1"
+                            "providers/sec_advisor_202X_provider/notes/sec_advisor_202X_note"
                         ],
                         "text": "Config Issues"
                     }
@@ -45,10 +45,9 @@
             }
         ],
         "finding_note_names": [
-            "providers/sdktest/notes/sdk_note_id1"
+            "providers/sec_advisor_202X_provider/notes/sec_advisor_202X_note"
         ],
         "section": "My Security Tools",
-        "order": 2,
         "title": "Card posted from Go SDK",
         "subtitle": "Trial error card"
     }

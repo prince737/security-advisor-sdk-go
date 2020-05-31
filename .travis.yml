@@ -30,7 +30,7 @@ script:
 # This step is required since we use a go module
 - go mod download
 - golangci-lint run
-- go test
+- go test ./...
 - go test `go list ./...` -tags integration
 
 #Integration with appscan and other sec scans will be done later

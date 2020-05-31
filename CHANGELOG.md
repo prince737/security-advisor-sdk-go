@@ -1,3 +1,11 @@
+## [1.0.1](https://github.com/ibm-cloud-security/security-advisor-sdk-go/compare/v1.0.0...v1.0.1) (2020-05-31)
+
+
+### Bug Fixes
+
+* **auto_build:** patch version test ([9a88f86](https://github.com/ibm-cloud-security/security-advisor-sdk-go/commit/9a88f86f98633abe3d468777a20870544b45b1a5))
+* **auto_build:** patch version test ([f20975a](https://github.com/ibm-cloud-security/security-advisor-sdk-go/commit/f20975a8c6d7b9af2439768047372dccc5e4dff1))
+
 # 1.0.0 (2020-05-31)
 
 

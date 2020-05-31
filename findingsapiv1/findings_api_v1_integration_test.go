@@ -106,7 +106,7 @@ func deleteOccurrenceHelper(t *testing.T, createOccurrenceOptions *findingsapiv1
 
 func TestServiceSetupWithExternalConfig(t *testing.T) {
 	externalConfigFile := inputEnvPath + "/findingsapiv1.env"
-
+	fmt.Println("Starting to Test Service Setup With External Config")
 	err = godotenv.Load(externalConfigFile)
 	if err != nil {
 		fmt.Println("Failed to load env vars: ", err)

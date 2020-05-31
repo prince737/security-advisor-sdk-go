@@ -142,6 +142,7 @@ func TestServiceSetupAndSetUrl(t *testing.T) {
 }
 
 func TestServiceSetup(t *testing.T) {
+	fmt.Println("Creating findings api service instance...")
 	authenticator := &core.IamAuthenticator{
 		ApiKey: apiKey,
 		URL:    URL,

@@ -162,8 +162,7 @@ func TestCreateChannelWithAllUsingFunctions(t *testing.T) {
 	alertSource, _ := service.NewNotificationChannelAlertSourceItem("ALL")
 	createChannelOptions.SetAlertSource([]notificationsapiv1.NotificationChannelAlertSourceItem{*alertSource})
 
-	result, _, err := service.CreateNotificationChannel(&createChannelOptions)
-	fmt.Println(err)
+	result, _, _ := service.CreateNotificationChannel(&createChannelOptions)
 	assert.NotNil(t, result)
 	assert.Equal(t, *result.StatusCode, int64(200))
 	fmt.Println("cleaning up channel")
@@ -351,8 +350,7 @@ func TestGetNotificationChannelUsingFunctions(t *testing.T) {
 
 	if result != nil {
 		fmt.Println("Created new channel....")
-		fmt.Println("Channel id: ", *result.ChannelID)
-		fmt.Println("Created getting channel....")
+		fmt.Println(" getting channel....")
 		var getChannelOptions notificationsapiv1.GetNotificationChannelOptions
 		getChannelOptions.SetAccountID(accountID)
 		getChannelOptions.SetChannelID(*result.ChannelID)

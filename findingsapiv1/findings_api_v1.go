@@ -2731,7 +2731,7 @@ type ApiProvider struct {
 // BreakdownCardElement : A card element with a breakdown of values.
 type BreakdownCardElement struct {
 	// The kind of this card element.
-	Kind *string `json:"text" validate:"required"`
+	Kind *string `json:"kind" validate:"required"`
 
 	// The text of this card element.
 	Text *string `json:"text" validate:"required"`

@@ -48,7 +48,7 @@ Service Name | Package name
 * Go version 1.12 or above.
 
 ## Installation
-The current version of this SDK: 0.0.1
+The current version of this SDK: 1.0.0
 
 There are a few different ways to download and install the Findings API Go SDK project for use by your
 Go application:

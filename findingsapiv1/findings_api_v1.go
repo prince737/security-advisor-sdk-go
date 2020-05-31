@@ -34,7 +34,7 @@ type FindingsApiV1 struct {
 }
 
 // DefaultServiceURL is the default URL to make service requests to.
-const DefaultServiceURL = "https://dev-dallas.secadvisor.test.cloud.ibm.com/findings"
+const DefaultServiceURL = "https://us-south.secadvisor.cloud.ibm.com/findings"
 
 // DefaultServiceName is the default key used to find external configuration information.
 const DefaultServiceName = "findings_api"
@@ -2731,7 +2731,7 @@ type ApiProvider struct {
 // BreakdownCardElement : A card element with a breakdown of values.
 type BreakdownCardElement struct {
 	// The kind of this card element.
-	Kind *string `json:"text" validate:"required"`
+	Kind *string `json:"kind" validate:"required"`
 
 	// The text of this card element.
 	Text *string `json:"text" validate:"required"`
@@ -2765,7 +2765,7 @@ func (findingsApi *FindingsApiV1) NewBreakdownCardElement(kind string, text stri
 // NumericCardElement : A card element with a single numeric value.
 type NumericCardElement struct {
 	// The kind of this card element.
-	Kind *string `json:"text" validate:"required"`
+	Kind *string `json:"kind" validate:"required"`
 
 	// The text of this card element.
 	Text *string `json:"text" validate:"required"`
@@ -2799,7 +2799,7 @@ func (findingsApi *FindingsApiV1) NewNumericCardElement(kind string, text string
 type TimeSeriesCardElement struct {
 
 	// The kind of this card element.
-	Kind *string `json:"text" validate:"required"`
+	Kind *string `json:"kind" validate:"required"`
 
 	// The text of this card element.
 	Text *string `json:"text" validate:"required"`

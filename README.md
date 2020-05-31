@@ -48,7 +48,7 @@ Service Name | Package name
 * Go version 1.12 or above.
 
 ## Installation
-The current version of this SDK: 0.0.1
+The current version of this SDK: 1.0.0
 
 There are a few different ways to download and install the Findings API Go SDK project for use by your
 Go application:
@@ -82,7 +82,7 @@ to your `Gopkg.toml` file.  Here is an example:
 ```
 [[constraint]]
   name = "github.com/ibm-cloud-security/security-advisor-sdk-go"
-  version = "0.0.1"
+  version = "1.0.0"
 
 ```
 
@@ -177,7 +177,7 @@ authenticator := &core.IamAuthenticator{
 }
 service, _ := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
   Authenticator: authenticator,
-  URL:           "https://dev-dallas.secadvisor.test.cloud.ibm.com/findings", //Specify url or use default
+  URL:           "https://us-south.secadvisor.cloud.ibm.com/findings", //Specify url or use default
 })
 
 getNotesOptions := service.NewGetNoteOptions(accountID, "providerID", noteID)
@@ -220,7 +220,7 @@ authenticator := &core.IamAuthenticator{
 }
 service, _ := notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
   Authenticator: authenticator,
-  URL:           "https://dev-dallas.secadvisor.test.cloud.ibm.com/notifications", //Specify url or use default
+  URL:           "https://us-south.secadvisor.cloud.ibm.com/notifications", //Specify url or use default
 })
 
 getChannelOptions := service.NewGetNotificationChannelOptions(accountID, channelID)

@@ -1,10 +1,9 @@
 {
-    "provider_id": "sdktest",
-    "kind": "KPI",
-    "id": "sdk_occ_id1_kpi",
-    "note_name": "4a1961206a5542b6aad0d11fd226cea7/providers/sdktest/notes/sdk_note_id1_kpi",
-    "kpi":{
-        "value":1,
-        "total":1
-      }
+  "provider_id": "sec_advisor_202X_provider",
+  "kind": "KPI",
+  "id": "sec_advisor_202X_kpi_occ",
+  "kpi":{
+      "value":1,
+      "total":1
+    }
 }

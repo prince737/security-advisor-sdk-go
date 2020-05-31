@@ -32,7 +32,7 @@ type NotificationsApiV1 struct {
 }
 
 // DefaultServiceURL is the default URL to make service requests to.
-const DefaultServiceURL = "https://dev-dallas.secadvisor.test.cloud.ibm.com/notifications"
+const DefaultServiceURL = "https://us-south.secadvisor.cloud.ibm.com/notifications"
 
 // DefaultServiceName is the default key used to find external configuration information.
 const DefaultServiceName = "notifications_api"

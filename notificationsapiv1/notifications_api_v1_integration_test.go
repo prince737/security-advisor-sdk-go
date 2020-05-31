@@ -22,6 +22,7 @@ var accountID = os.Getenv("accountID")
 var URL = os.Getenv("URL")
 var inputEnvPath = "../testInput/env"
 var inputFilePath = "../testInput/json"
+var notificationsServiceURL = os.Getenv("notificationsServiceURL")
 
 var (
 	service     *notificationsapiv1.NotificationsApiV1
@@ -48,6 +49,7 @@ func createChannelHelper(t *testing.T, path string) (*notificationsapiv1.CreateC
 	json.Unmarshal([]byte(query), &createNotificationChannelOptions)
 	createNotificationChannelOptions.SetHeaders(headers)
 
+	createNotificationChannelOptions.AccountID = &accountID
 	result, resp, operationErr := service.CreateNotificationChannel(createNotificationChannelOptions)
 	if operationErr != nil && resp.StatusCode != 200 {
 		t.Log("Failed to create channel: ", operationErr)
@@ -114,7 +116,7 @@ func TestServiceSetup(t *testing.T) { //This is required for tests that follow
 	}
 	service, err = notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
 		Authenticator: authenticator,
-		URL:           "https://dev-dallas.secadvisor.test.cloud.ibm.com/notifications",
+		URL:           notificationsServiceURL,
 	})
 	if service == nil {
 		t.Fatal("Expected service to not be nil, but got: ", service)

@@ -2765,7 +2765,7 @@ func (findingsApi *FindingsApiV1) NewBreakdownCardElement(kind string, text stri
 // NumericCardElement : A card element with a single numeric value.
 type NumericCardElement struct {
 	// The kind of this card element.
-	Kind *string `json:"text" validate:"required"`
+	Kind *string `json:"kind" validate:"required"`
 
 	// The text of this card element.
 	Text *string `json:"text" validate:"required"`
@@ -2799,7 +2799,7 @@ func (findingsApi *FindingsApiV1) NewNumericCardElement(kind string, text string
 type TimeSeriesCardElement struct {
 
 	// The kind of this card element.
-	Kind *string `json:"text" validate:"required"`
+	Kind *string `json:"kind" validate:"required"`
 
 	// The text of this card element.
 	Text *string `json:"text" validate:"required"`

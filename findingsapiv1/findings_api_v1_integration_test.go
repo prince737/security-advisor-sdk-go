@@ -45,7 +45,6 @@ func createNoteHelper(t *testing.T, path string) (result *findingsapiv1.ApiNote,
 
 	query, err := ioutil.ReadFile(path)
 	if err != nil {
-		fmt.Println("here")
 		t.Fatal(err)
 	}
 
@@ -326,7 +325,6 @@ func TestListNoteOccurrences(t *testing.T) {
 	res, _, err = service.ListNoteOccurrences(listNoteOccurrencesOptions)
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
-	fmt.Println(*createOccurrenceOptions.ProviderID)
 	assert.Equal(t, *(res.Occurrences[0].ID), *(createOccurrenceOptions.ID))
 	assert.Equal(t, *(res.Occurrences[0].NoteName), accountID+"/providers/"+*createNoteOptions.ProviderID+"/notes/"+*createNoteOptions.ID)
 
@@ -464,9 +462,8 @@ func TestCreateOccurrence(t *testing.T) {
 	createOptions.SetUpdateTime(&createTime)
 	createOptions.SetReplaceIfExists(true)
 	fmt.Println("Creating occurrence")
-	result, resp, operationErr := service.CreateOccurrence(createOptions)
+	result, _, operationErr := service.CreateOccurrence(createOptions)
 	if operationErr != nil {
-		fmt.Println(resp.Result)
 		t.Fatal("Failed to create occurrence: ", operationErr)
 	}
 	assert.Equal(t, *(result.ID), *(createOptions.ID))
@@ -581,7 +578,6 @@ func TestUpdateOccurrence(t *testing.T) {
 		fmt.Println("Failed to edit occurrence: ", operationErr)
 	}
 
-	fmt.Println(result.OccurrenceID)
 	assert.Nil(t, operationErr)
 	assert.NotNil(t, result)
 	fmt.Println("Edited occurrence....")
@@ -823,8 +819,6 @@ func TestPostCard(t *testing.T) {
 		assert.Equal(t, *result.Card.Elements[0].Kind, *createNoteOptions.Card.Elements[0].Kind)
 		assert.Equal(t, *result.Card.Elements[1].Kind, *createNoteOptions.Card.Elements[1].Kind)
 
-		fmt.Println(*result.Card.Elements[0].Kind)
-
 		fmt.Println("Cleaning up note....")
 		deleteNoteHelper(t, createNoteOptions)
 	}
@@ -975,12 +969,10 @@ func TestEditKpiNote(t *testing.T) {
 		updateNoteOptions.SetKpi(kpi)
 
 		fmt.Println("Editing note....")
-		result, resp, operationErr := service.UpdateNote(updateNoteOptions)
+		result, _, operationErr := service.UpdateNote(updateNoteOptions)
 		if operationErr != nil {
 			fmt.Println("Failed to edit note: ", operationErr)
 		}
-
-		fmt.Println(resp.Result)
 
 		assert.Nil(t, err)
 		assert.NotNil(t, result)

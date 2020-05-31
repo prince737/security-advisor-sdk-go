@@ -34,7 +34,7 @@ type FindingsApiV1 struct {
 }
 
 // DefaultServiceURL is the default URL to make service requests to.
-const DefaultServiceURL = "https://dev-dallas.secadvisor.test.cloud.ibm.com/findings"
+const DefaultServiceURL = "https://us-south.secadvisor.cloud.ibm.com/findings"
 
 // DefaultServiceName is the default key used to find external configuration information.
 const DefaultServiceName = "findings_api"

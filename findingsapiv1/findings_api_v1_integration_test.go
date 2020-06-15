@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -49,13 +50,15 @@ func createNoteHelper(t *testing.T, path string) (result *findingsapiv1.ApiNote,
 	}
 
 	var createNoteOptions *findingsapiv1.CreateNoteOptions
+	now := time.Now()
+	timeStamp := now.UnixNano()
 	json.Unmarshal([]byte(query), &createNoteOptions)
 	createNoteOptions.SetHeaders(headers)
 	createNoteOptions.SetAccountID(accountID)
+	createNoteOptions.SetID(strconv.FormatInt(timeStamp, 10))
 
 	result, _, operationErr := service.CreateNote(createNoteOptions)
 	if operationErr != nil {
-		fmt.Println(operationErr)
 		t.Log("Failed to create note: ", operationErr)
 	}
 
@@ -73,9 +76,12 @@ func createOccurrenceHelper(t *testing.T, path string, noteID string) (*findings
 	}
 
 	var createOccurrenceOptions *findingsapiv1.CreateOccurrenceOptions
+	now := time.Now()
+	timeStamp := now.UnixNano()
 	json.Unmarshal([]byte(query), &createOccurrenceOptions)
 	createOccurrenceOptions.SetHeaders(headers)
 	createOccurrenceOptions.SetAccountID(accountID)
+	createOccurrenceOptions.SetID(strconv.FormatInt(timeStamp, 10))
 	noteName := accountID + "/providers/" + *createOccurrenceOptions.ProviderID + "/notes/" + noteID
 	createOccurrenceOptions.NoteName = &noteName
 
@@ -214,15 +220,15 @@ func TestListProvider(t *testing.T) {
 	headers := make(map[string]string)
 	headers["Content-Type"] = "application/json"
 	res, createNoteOptions := createNoteHelper(t, inputFilePath+"/note.json")
-
-	if res != nil {
-
-		//Test post graph with nil options
+	if res == nil {
+		t.Fatal("failed to create note")
+	} else {
+		//Test List Providers with nil options
 		res, _, err := service.ListProviders(nil)
 		assert.NotNil(t, err)
 		assert.Nil(t, res)
 
-		//Test post graph without required options
+		//Test List Providers without required options
 		var options findingsapiv1.ListProvidersOptions
 		res, _, err = service.ListProviders(&options)
 		assert.NotNil(t, err)
@@ -437,7 +443,7 @@ func TestCreateOccurrence(t *testing.T) {
 
 	//Test create occurrence using setters
 	occID := "sec_advisor_202X_occ_id1"
-	noteID := "sec_advisor_202X_note"
+	noteID := *createNoteOptions.ID
 	providerID := "sec_advisor_202X_provider"
 	noteName := accountID + "/providers/" + providerID + "/notes/" + noteID
 	createOptions := service.NewCreateOccurrenceOptions(accountID, *createNoteOptions.ProviderID, noteName, "FINDING", occID)
@@ -463,8 +469,9 @@ func TestCreateOccurrence(t *testing.T) {
 	createOptions.SetUpdateTime(&createTime)
 	createOptions.SetReplaceIfExists(true)
 	fmt.Println("Creating occurrence")
-	result, _, operationErr := service.CreateOccurrence(createOptions)
+	result, resp, operationErr := service.CreateOccurrence(createOptions)
 	if operationErr != nil {
+		fmt.Println(resp.Result)
 		t.Fatal("Failed to create occurrence: ", operationErr)
 	}
 	assert.Equal(t, *(result.ID), *(createOptions.ID))
@@ -563,6 +570,7 @@ func TestUpdateOccurrence(t *testing.T) {
 	json.Unmarshal([]byte(query), &updateOccurrenceOptions)
 	updateOccurrenceOptions.SetHeaders(headers)
 	updateOccurrenceOptions.SetAccountID(accountID)
+	updateOccurrenceOptions.SetID(*createOccurrenceOptions.ID)
 
 	//Update kpis to verify kpi setters
 	kpi, _ := service.NewKpi(float64(5))
@@ -574,8 +582,9 @@ func TestUpdateOccurrence(t *testing.T) {
 	updateOccurrenceOptions.NoteName = &noteName
 
 	fmt.Println("Editing occurrence....")
-	result, _, operationErr := service.UpdateOccurrence(updateOccurrenceOptions)
+	result, resp, operationErr := service.UpdateOccurrence(updateOccurrenceOptions)
 	if operationErr != nil {
+		fmt.Println(resp.Result)
 		fmt.Println("Failed to edit occurrence: ", operationErr)
 	}
 
@@ -676,14 +685,16 @@ func TestGetAllNote(t *testing.T) {
 	getNotesOptions := service.NewListNotesOptions(accountID, *(createNoteOptions.ProviderID))
 	res, _, err = service.ListNotes(getNotesOptions)
 
-	var noteIds [2]string
-	noteIds[0] = *res.Notes[0].ID
-	noteIds[1] = *res.Notes[1].ID
+	found := 0
+	for i := 0; i < len(res.Notes); i++ {
+		if *res.Notes[i].ID == *createCardOptions.ID || *res.Notes[i].ID == *createNoteOptions.ID {
+			found++
+		}
+	}
 
 	assert.Nil(t, err)
 	assert.NotNil(t, res)
-	assert.Contains(t, noteIds, *(createCardOptions.ID))
-	assert.Contains(t, noteIds, *(createNoteOptions.ID))
+	assert.Equal(t, found, 2)
 
 	//Test using setters
 	var listOptions findingsapiv1.ListNotesOptions
@@ -957,8 +968,8 @@ func TestEditKpiNote(t *testing.T) {
 		headers["Content-Type"] = "application/json"
 
 		providerId := "sec_advisor_202X_provider"
-		noteId := "sec_advisor_202X_kpi_note"
-		ID := "sec_advisor_202X_kpi_note"
+		noteId := *createNoteOptions.ID
+		ID := *createNoteOptions.ID
 		longDesc := "long desc"
 		shortDesc := "short desc"
 		kind := "KPI"

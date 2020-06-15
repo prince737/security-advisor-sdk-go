@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"testing"
+	"time"
 
 	"github.com/IBM/go-sdk-core/v3/core"
 	"github.com/joho/godotenv"
@@ -48,13 +50,14 @@ func createChannelHelper(t *testing.T, path string) (*notificationsapiv1.CreateC
 	var createNotificationChannelOptions *notificationsapiv1.CreateNotificationChannelOptions
 	json.Unmarshal([]byte(query), &createNotificationChannelOptions)
 	createNotificationChannelOptions.SetHeaders(headers)
-
+	now := time.Now()
+	timeStamp := now.UnixNano()
+	createNotificationChannelOptions.SetName(strconv.FormatInt(timeStamp, 10))
 	createNotificationChannelOptions.AccountID = &accountID
 	result, resp, operationErr := service.CreateNotificationChannel(createNotificationChannelOptions)
 	if operationErr != nil && resp.StatusCode != 200 {
 		t.Log("Failed to create channel: ", operationErr)
 	}
-
 	return result, createNotificationChannelOptions, operationErr
 }
 
@@ -130,12 +133,14 @@ func TestServiceSetup(t *testing.T) { //This is required for tests that follow
 
 func TestCreateNotificationChannelWithRequired(t *testing.T) {
 	fmt.Println("creating new channel with required only")
-	result, createChannelOptions, _ := createChannelHelper(t, inputFilePath+"/channel_with_required_only.json")
+	result, createChannelOptions, err := createChannelHelper(t, inputFilePath+"/channel_with_required_only.json")
+	if err != nil {
+		t.Fatal("Failed to create channel: ", err)
+	}
 	assert.NotNil(t, result)
 	assert.Equal(t, *result.StatusCode, int64(200))
 	fmt.Println("cleaning up channel")
 	deleteChannelHelper(t, *createChannelOptions.AccountID, *result.ChannelID)
-
 }
 
 func TestCreateChannelWithRequiredUsingStruct(t *testing.T) {
@@ -709,8 +714,15 @@ func TestGetNotificationChannelsFailureWithInvalidAccId(t *testing.T) {
 
 func TestBulkDeleteNotificationChannel(t *testing.T) {
 	fmt.Println("creating new channels for bulk delete test...")
-	result1, _, _ := createChannelHelper(t, inputFilePath+"/channel_with_required_only.json")
-	result2, _, _ := createChannelHelper(t, inputFilePath+"/channel_with_severity.json")
+	result1, _, err1 := createChannelHelper(t, inputFilePath+"/channel_with_required_only.json")
+	if err1 != nil {
+		t.Fatal("Failed to create channel: ", err)
+	}
+	result2, _, err2 := createChannelHelper(t, inputFilePath+"/channel_with_severity.json")
+	if err2 != nil {
+		t.Fatal("Failed to create channel: ", err)
+	}
+
 	assert.NotNil(t, result1)
 	assert.NotNil(t, result2)
 	assert.Equal(t, *result1.StatusCode, int64(200))

@@ -1,3 +1,12 @@
+## [1.0.3](https://github.com/ibm-cloud-security/security-advisor-sdk-go/compare/v1.0.2...v1.0.3) (2020-08-13)
+
+
+### Bug Fixes
+
+* **severity:** Added support for critical severity ([6a0c15a](https://github.com/ibm-cloud-security/security-advisor-sdk-go/commit/6a0c15aa039cfa7caf2d40c529679d0d63e22793))
+* **severity:** Added support for critical severity ([36c4ad8](https://github.com/ibm-cloud-security/security-advisor-sdk-go/commit/36c4ad8d29ca5013c46e42e19396bda2eab818a8))
+* **severity:** Added support for critical severity ([fca2115](https://github.com/ibm-cloud-security/security-advisor-sdk-go/commit/fca21157933ae8697a4022244c295b871b65b9c5))
+
 ## [1.0.2](https://github.com/ibm-cloud-security/security-advisor-sdk-go/compare/v1.0.1...v1.0.2) (2020-06-15)
 
 

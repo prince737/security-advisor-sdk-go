@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	sdkName             = "ibm_cloud_security_advisor"
+	sdkName             = "ibm-security-advisor-go-sdk"
 	headerNameUserAgent = "User-Agent"
 )
 

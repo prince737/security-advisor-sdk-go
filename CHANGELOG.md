@@ -1,3 +1,12 @@
+# [1.1.0](https://github.com/ibm-cloud-security/security-advisor-sdk-go/compare/v1.0.3...v1.1.0) (2020-08-19)
+
+
+### Features
+
+* **sdk-metrics:** Add User-Agent for sdk metrics instrumentation ([6fdbff2](https://github.com/ibm-cloud-security/security-advisor-sdk-go/commit/6fdbff23fb61cd16c5974d193e6e01eceb3317f2))
+* **sdk-metrics:** Add User-Agent for sdk metrics instrumentation ([4fd1f62](https://github.com/ibm-cloud-security/security-advisor-sdk-go/commit/4fd1f6206e727ad55fdff3e837f5090afd560469))
+* **sdk-metrics:** Add User-Agent for sdk metrics instrumentation ([08dbccb](https://github.com/ibm-cloud-security/security-advisor-sdk-go/commit/08dbccb72449c5c8e5e9c04c4db5b47ccd806a02))
+
 ## [1.0.3](https://github.com/ibm-cloud-security/security-advisor-sdk-go/compare/v1.0.2...v1.0.3) (2020-08-13)
 
 

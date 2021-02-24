@@ -20,7 +20,9 @@ package notificationsapiv1
 import (
 	"fmt"
 
+	// "io/ioutil"
 	"github.com/IBM/go-sdk-core/v3/core"
+	// "github.com/dgrijalva/jwt-go"
 	common "github.com/ibm-cloud-security/security-advisor-sdk-go/common"
 )
 
@@ -75,21 +77,21 @@ func NewNotificationsApiV1UsingExternalConfig(options *NotificationsApiV1Options
 
 // NewNotificationsApiV1 : constructs an instance of NotificationsApiV1 with passed in options.
 func NewNotificationsApiV1(options *NotificationsApiV1Options) (service *NotificationsApiV1, err error) {
+	serviceURL, err := common.GetServiceURL(options.Authenticator)
+	if err != nil {
+		panic(err)
+	}
+	// serviceURL = serviceURL + "/notifications"
+	serviceURL = "http://localhost:9999/notifications"
+
 	serviceOptions := &core.ServiceOptions{
-		URL:           DefaultServiceURL,
+		URL:           serviceURL,
 		Authenticator: options.Authenticator,
 	}
 
 	baseService, err := core.NewBaseService(serviceOptions)
 	if err != nil {
 		return
-	}
-
-	if options.URL != "" {
-		err = baseService.SetServiceURL(options.URL)
-		if err != nil {
-			return
-		}
 	}
 
 	service = &NotificationsApiV1{
@@ -101,6 +103,10 @@ func NewNotificationsApiV1(options *NotificationsApiV1Options) (service *Notific
 
 // SetServiceURL sets the service URL
 func (notificationsApi *NotificationsApiV1) SetServiceURL(url string) error {
+	_, err := common.VerifyLocation(url)
+	if err != nil {
+		panic(err)
+	}
 	return notificationsApi.Service.SetServiceURL(url)
 }
 

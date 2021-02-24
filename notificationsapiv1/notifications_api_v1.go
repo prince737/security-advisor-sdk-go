@@ -81,8 +81,7 @@ func NewNotificationsApiV1(options *NotificationsApiV1Options) (service *Notific
 	if err != nil {
 		panic(err)
 	}
-	// serviceURL = serviceURL + "/notifications"
-	serviceURL = "http://localhost:9999/notifications"
+	serviceURL = serviceURL + "/notifications"
 
 	serviceOptions := &core.ServiceOptions{
 		URL:           serviceURL,

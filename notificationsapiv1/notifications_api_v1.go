@@ -77,7 +77,7 @@ func NewNotificationsApiV1UsingExternalConfig(options *NotificationsApiV1Options
 
 // NewNotificationsApiV1 : constructs an instance of NotificationsApiV1 with passed in options.
 func NewNotificationsApiV1(options *NotificationsApiV1Options) (service *NotificationsApiV1, err error) {
-	serviceURL, err := common.GetServiceURL(options.Authenticator)
+	serviceURL, err := common.GetServiceURL(options.Authenticator, DefaultServiceName)
 	if err != nil {
 		panic(err)
 	}
@@ -102,7 +102,7 @@ func NewNotificationsApiV1(options *NotificationsApiV1Options) (service *Notific
 
 // SetServiceURL sets the service URL
 func (notificationsApi *NotificationsApiV1) SetServiceURL(url string) error {
-	_, err := common.VerifyLocation(url)
+	_, err := common.VerifyLocation(url, DefaultServiceName)
 	if err != nil {
 		panic(err)
 	}

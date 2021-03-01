@@ -77,7 +77,7 @@ func NewFindingsApiV1UsingExternalConfig(options *FindingsApiV1Options) (finding
 
 // NewFindingsApiV1 : constructs an instance of FindingsApiV1 with passed in options.
 func NewFindingsApiV1(options *FindingsApiV1Options) (service *FindingsApiV1, err error) {
-	serviceURL, err := common.GetServiceURL(options.Authenticator)
+	serviceURL, err := common.GetServiceURL(options.Authenticator, DefaultServiceName)
 	if err != nil {
 		panic(err)
 	}
@@ -102,6 +102,10 @@ func NewFindingsApiV1(options *FindingsApiV1Options) (service *FindingsApiV1, er
 
 // SetServiceURL sets the service URL
 func (findingsApi *FindingsApiV1) SetServiceURL(url string) error {
+	_, err := common.VerifyLocation(url, DefaultServiceName)
+	if err != nil {
+		panic(err)
+	}
 	return findingsApi.Service.SetServiceURL(url)
 }
 

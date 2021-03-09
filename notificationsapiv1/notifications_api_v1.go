@@ -70,7 +70,10 @@ func NewNotificationsApiV1UsingExternalConfig(options *NotificationsApiV1Options
 	}
 
 	if options.URL != "" {
-		err = notificationsApi.Service.SetServiceURL(options.URL)
+		err = notificationsApi.SetServiceURL(options.URL)
+	}
+	if notificationsApi.Service.GetServiceURL() != "" { //Used for verification of URL specified in external config
+		err = notificationsApi.SetServiceURL(notificationsApi.Service.GetServiceURL())
 	}
 	return
 }
@@ -81,7 +84,6 @@ func NewNotificationsApiV1(options *NotificationsApiV1Options) (service *Notific
 	if err != nil {
 		panic(err)
 	}
-	serviceURL = serviceURL + "/notifications"
 
 	serviceOptions := &core.ServiceOptions{
 		URL:           serviceURL,

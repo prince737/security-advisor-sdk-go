@@ -113,12 +113,18 @@ func deleteOccurrenceHelper(t *testing.T, createOccurrenceOptions *findingsapiv1
 func TestServiceSetupWithExternalConfig(t *testing.T) {
 	externalConfigFile := inputEnvPath + "/findingsapiv1.env"
 	fmt.Println("Starting to Test Service Setup With External Config")
+	authenticator := &core.IamAuthenticator{
+		ApiKey: apiKey,
+		URL:    URL,
+	}
 	err = godotenv.Load(externalConfigFile)
 	if err != nil {
 		fmt.Println("Failed to load env vars: ", err)
 	}
 
-	testService, err := findingsapiv1.NewFindingsApiV1UsingExternalConfig(&findingsapiv1.FindingsApiV1Options{})
+	testService, err := findingsapiv1.NewFindingsApiV1UsingExternalConfig(&findingsapiv1.FindingsApiV1Options{
+		Authenticator: authenticator,
+	})
 	if err != nil {
 		fmt.Println("Failed to load external config: ", err)
 	}
@@ -138,13 +144,32 @@ func TestServiceSetupAndSetUrl(t *testing.T) {
 		t.Fatal("Expected service to not be nil, but got: ", err)
 	}
 
-	testService.SetServiceURL("https://dev-dallas.secadvisor.test.cloud.ibm.com/findings")
+	testService.SetServiceURL("https://us-south.secadvisor.cloud.ibm.com/findings")
 
-	assert.Equal(t, testService.Service.Options.URL, "https://dev-dallas.secadvisor.test.cloud.ibm.com/findings")
+	assert.Equal(t, testService.Service.Options.URL, "https://us-south.secadvisor.cloud.ibm.com/findings")
 	if err != nil {
 		t.Fatal("expected testServiceErr to be nil, but got: ", err)
 	}
 
+}
+
+func TestServiceSetupAndIncorrectSetUrl(t *testing.T) {
+	defer func() {
+		err := recover().(error)
+		assert.Equal(t, err.Error(), "Service URL specified is incorrect for the selected location. Correct URL is:  https://us-south.secadvisor.cloud.ibm.com/findings")
+	}()
+	authenticator := &core.IamAuthenticator{
+		ApiKey: apiKey,
+		URL:    URL,
+	}
+	testService, _ := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
+		Authenticator: authenticator,
+	})
+	if testService == nil {
+		t.Fatal("Expected service to not be nil, but got: ", service)
+	}
+
+	testService.SetServiceURL("https://eu-gb.secadvisor.cloud.ibm.com/findings")
 }
 
 func TestServiceSetup(t *testing.T) {

@@ -72,6 +72,10 @@ func NewFindingsApiV1UsingExternalConfig(options *FindingsApiV1Options) (finding
 	if options.URL != "" {
 		err = findingsApi.Service.SetServiceURL(options.URL)
 	}
+
+	if findingsApi.Service.GetServiceURL() != "" { //Used for verification of URL specified in external config
+		err = findingsApi.SetServiceURL(findingsApi.Service.GetServiceURL())
+	}
 	return
 }
 
@@ -81,7 +85,8 @@ func NewFindingsApiV1(options *FindingsApiV1Options) (service *FindingsApiV1, er
 	if err != nil {
 		panic(err)
 	}
-	serviceURL = serviceURL + "/findings"
+
+	fmt.Println(serviceURL)
 
 	serviceOptions := &core.ServiceOptions{
 		URL:           serviceURL,

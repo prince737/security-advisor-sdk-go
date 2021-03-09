@@ -27,20 +27,44 @@ import (
 
 	"github.com/IBM/go-sdk-core/v3/core"
 	"github.com/go-openapi/strfmt"
+	common "github.com/ibm-cloud-security/security-advisor-sdk-go/common"
 	"github.com/ibm-cloud-security/security-advisor-sdk-go/findingsapiv1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
+var mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50Ijp7InZhbGlkIjp0cnVlLCJic3MiOiIxMjMiLCJmcm96ZW4iOnRydWV9fQ.fg7gqslY47Y5pjt5euyCUO4xqfJK1ingI84WPqC52BY"
+var locationResp string
+
+var _ = BeforeSuite(func() {
+
+	ts := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		defer GinkgoRecover()
+		res.Header().Set("Content-type", "application/json")
+		res.WriteHeader(200)
+		if req.URL.Path == "/accounts/123/settings" {
+			fmt.Fprintf(res, `{
+				"location": {
+				  "id": "us"
+				}
+			  }`)
+		} else if req.URL.Path == "/locations/us" {
+			fmt.Fprintf(res, locationResp)
+		}
+	}))
+	common.AdminServiceURL = ts.URL
+})
+
 var _ = Describe(`FindingsApiV1`, func() {
 	Describe(`PostGraph(postGraphOptions *PostGraphOptions)`, func() {
-		postGraphPath := "/v1/{account_id}/graph"
+		postGraphPath := "/v1{account_id}/graph"
 		accountID := "exampleString"
 		postGraphPath = strings.Replace(postGraphPath, "{account_id}", accountID, 1)
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
-		Context(`Successfully - query findings`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -48,12 +72,20 @@ var _ = Describe(`FindingsApiV1`, func() {
 				Expect(req.Method).To(Equal("POST"))
 				res.WriteHeader(200)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - query findings`, func() {
+
 			It(`Succeed to call PostGraph`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -80,7 +112,7 @@ var _ = Describe(`FindingsApiV1`, func() {
 		})
 	})
 	Describe(`CreateNote(createNoteOptions *CreateNoteOptions)`, func() {
-		createNotePath := "/v1/{account_id}/providers/{provider_id}/notes"
+		createNotePath := "/v1{account_id}/providers/{provider_id}/notes"
 		accountID := "exampleString"
 		providerID := "exampleString"
 		shortDescription := "exampleString"
@@ -96,8 +128,9 @@ var _ = Describe(`FindingsApiV1`, func() {
 		headers := make(map[string]string)
 		time := strfmt.DateTime(time.Now())
 		headers["Content-Type"] = "application/json"
-		Context(`Successfully - Creates a new Note`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -107,12 +140,19 @@ var _ = Describe(`FindingsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{"short_description": "fake_ShortDescription", "long_description": "fake_LongDescription", "kind": "CARD", "id": "fake_ID", "reported_by": {"id": "fake_ID", "title": "fake_Title"}}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - Creates a new Note`, func() {
 			It(`Succeed to call CreateNote`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -167,15 +207,16 @@ var _ = Describe(`FindingsApiV1`, func() {
 		})
 	})
 	Describe(`ListNotes(listNotesOptions *ListNotesOptions)`, func() {
-		listNotesPath := "/v1/{account_id}/providers/{provider_id}/notes"
+		listNotesPath := "/v1{account_id}/providers/{provider_id}/notes"
 		accountID := "exampleString"
 		providerID := "exampleString"
 		listNotesPath = strings.Replace(listNotesPath, "{account_id}", accountID, 1)
 		listNotesPath = strings.Replace(listNotesPath, "{provider_id}", providerID, 1)
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
-		Context(`Successfully - Lists all Notes for a given provider`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -185,12 +226,19 @@ var _ = Describe(`FindingsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - Lists all Notes for a given provider`, func() {
 			It(`Succeed to call ListNotes`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -223,7 +271,7 @@ var _ = Describe(`FindingsApiV1`, func() {
 		})
 	})
 	Describe(`GetNote(getNoteOptions *GetNoteOptions)`, func() {
-		getNotePath := "/v1/{account_id}/providers/{provider_id}/notes/{note_id}"
+		getNotePath := "/v1{account_id}/providers/{provider_id}/notes/{note_id}"
 		accountID := "exampleString"
 		providerID := "exampleString"
 		noteID := "exampleString"
@@ -232,8 +280,9 @@ var _ = Describe(`FindingsApiV1`, func() {
 		getNotePath = strings.Replace(getNotePath, "{note_id}", noteID, 1)
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
-		Context(`Successfully - Returns the requested Note`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -243,12 +292,19 @@ var _ = Describe(`FindingsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{"short_description": "fake_ShortDescription", "long_description": "fake_LongDescription", "kind": "CARD", "id": "fake_ID", "reported_by": {"id": "fake_ID", "title": "fake_Title"}}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - Returns the requested Note`, func() {
 			It(`Succeed to call GetNote`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -280,7 +336,7 @@ var _ = Describe(`FindingsApiV1`, func() {
 		})
 	})
 	Describe(`UpdateNote(updateNoteOptions *UpdateNoteOptions)`, func() {
-		updateNotePath := "/v1/{account_id}/providers/{provider_id}/notes/{note_id}"
+		updateNotePath := "/v1{account_id}/providers/{provider_id}/notes/{note_id}"
 		accountID := "exampleString"
 		providerID := "exampleString"
 		noteID := "exampleString"
@@ -298,8 +354,9 @@ var _ = Describe(`FindingsApiV1`, func() {
 		label := "label"
 		url := "https://ss.ss"
 		relatedUrl := []findingsapiv1.ApiNoteRelatedURL{{Label: &label, URL: &url}}
-		Context(`Successfully - Updates an existing Note`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -309,12 +366,19 @@ var _ = Describe(`FindingsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{"short_description": "fake_ShortDescription", "long_description": "fake_LongDescription", "kind": "CARD", "id": "fake_ID", "reported_by": {"id": "fake_ID", "title": "fake_Title"}}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - Updates an existing Note`, func() {
 			It(`Succeed to call UpdateNote`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -366,7 +430,7 @@ var _ = Describe(`FindingsApiV1`, func() {
 		})
 	})
 	Describe(`DeleteNote(deleteNoteOptions *DeleteNoteOptions)`, func() {
-		deleteNotePath := "/v1/{account_id}/providers/{provider_id}/notes/{note_id}"
+		deleteNotePath := "/v1{account_id}/providers/{provider_id}/notes/{note_id}"
 		accountID := "exampleString"
 		providerID := "exampleString"
 		noteID := "exampleString"
@@ -375,8 +439,9 @@ var _ = Describe(`FindingsApiV1`, func() {
 		deleteNotePath = strings.Replace(deleteNotePath, "{note_id}", noteID, 1)
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
-		Context(`Successfully - Deletes the given Note from the system`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -384,12 +449,19 @@ var _ = Describe(`FindingsApiV1`, func() {
 				Expect(req.Method).To(Equal("DELETE"))
 				res.WriteHeader(200)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - Deletes the given Note from the system`, func() {
 			It(`Succeed to call DeleteNote`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -418,7 +490,7 @@ var _ = Describe(`FindingsApiV1`, func() {
 		})
 	})
 	Describe(`GetOccurrenceNote(getOccurrenceNoteOptions *GetOccurrenceNoteOptions)`, func() {
-		getOccurrenceNotePath := "/v1/{account_id}/providers/{provider_id}/occurrences/{occurrence_id}/note"
+		getOccurrenceNotePath := "/v1{account_id}/providers/{provider_id}/occurrences/{occurrence_id}/note"
 		accountID := "exampleString"
 		providerID := "exampleString"
 		occurrenceID := "exampleString"
@@ -427,8 +499,9 @@ var _ = Describe(`FindingsApiV1`, func() {
 		getOccurrenceNotePath = strings.Replace(getOccurrenceNotePath, "{occurrence_id}", occurrenceID, 1)
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
-		Context(`Successfully - Gets the Note attached to the given Occurrence`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -438,12 +511,19 @@ var _ = Describe(`FindingsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{"short_description": "fake_ShortDescription", "long_description": "fake_LongDescription", "kind": "CARD", "id": "fake_ID", "reported_by": {"id": "fake_ID", "title": "fake_Title"}}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - Gets the Note attached to the given Occurrence`, func() {
 			It(`Succeed to call GetOccurrenceNote`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -475,7 +555,7 @@ var _ = Describe(`FindingsApiV1`, func() {
 		})
 	})
 	Describe(`CreateOccurrence(createOccurrenceOptions *CreateOccurrenceOptions)`, func() {
-		createOccurrencePath := "/v1/{account_id}/providers/{provider_id}/occurrences"
+		createOccurrencePath := "/v1{account_id}/providers/{provider_id}/occurrences"
 		accountID := "exampleString"
 		providerID := "exampleString"
 		noteName := "exampleString"
@@ -486,8 +566,9 @@ var _ = Describe(`FindingsApiV1`, func() {
 		time := strfmt.DateTime(time.Now())
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
-		Context(`Successfully - Creates a new Occurrence. Use this method to create Occurrences for a resource`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -497,12 +578,19 @@ var _ = Describe(`FindingsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{"note_name": "fake_NoteName", "kind": "CARD", "id": "fake_ID"}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - Creates a new Occurrence. Use this method to create Occurrences for a resource`, func() {
 			It(`Succeed to call CreateOccurrence`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -554,15 +642,16 @@ var _ = Describe(`FindingsApiV1`, func() {
 		})
 	})
 	Describe(`ListOccurrences(listOccurrencesOptions *ListOccurrencesOptions)`, func() {
-		listOccurrencesPath := "/v1/{account_id}/providers/{provider_id}/occurrences"
+		listOccurrencesPath := "/v1{account_id}/providers/{provider_id}/occurrences"
 		accountID := "exampleString"
 		providerID := "exampleString"
 		listOccurrencesPath = strings.Replace(listOccurrencesPath, "{account_id}", accountID, 1)
 		listOccurrencesPath = strings.Replace(listOccurrencesPath, "{provider_id}", providerID, 1)
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
-		Context(`Successfully - Lists active Occurrences for a given provider matching the filters`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -572,12 +661,19 @@ var _ = Describe(`FindingsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - Lists active Occurrences for a given provider matching the filters`, func() {
 			It(`Succeed to call ListOccurrences`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -610,7 +706,7 @@ var _ = Describe(`FindingsApiV1`, func() {
 		})
 	})
 	Describe(`ListNoteOccurrences(listNoteOccurrencesOptions *ListNoteOccurrencesOptions)`, func() {
-		listNoteOccurrencesPath := "/v1/{account_id}/providers/{provider_id}/notes/{note_id}/occurrences"
+		listNoteOccurrencesPath := "/v1{account_id}/providers/{provider_id}/notes/{note_id}/occurrences"
 		accountID := "exampleString"
 		providerID := "exampleString"
 		noteID := "exampleString"
@@ -619,8 +715,9 @@ var _ = Describe(`FindingsApiV1`, func() {
 		listNoteOccurrencesPath = strings.Replace(listNoteOccurrencesPath, "{note_id}", noteID, 1)
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
-		Context(`Successfully - Lists Occurrences referencing the specified Note. Use this method to get all occurrences referencing your Note across all your customer providers`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -630,12 +727,19 @@ var _ = Describe(`FindingsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - Lists Occurrences referencing the specified Note. Use this method to get all occurrences referencing your Note across all your customer providers`, func() {
 			It(`Succeed to call ListNoteOccurrences`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -669,7 +773,7 @@ var _ = Describe(`FindingsApiV1`, func() {
 		})
 	})
 	Describe(`GetOccurrence(getOccurrenceOptions *GetOccurrenceOptions)`, func() {
-		getOccurrencePath := "/v1/{account_id}/providers/{provider_id}/occurrences/{occurrence_id}"
+		getOccurrencePath := "/v1{account_id}/providers/{provider_id}/occurrences/{occurrence_id}"
 		accountID := "exampleString"
 		providerID := "exampleString"
 		occurrenceID := "exampleString"
@@ -678,8 +782,9 @@ var _ = Describe(`FindingsApiV1`, func() {
 		getOccurrencePath = strings.Replace(getOccurrencePath, "{occurrence_id}", occurrenceID, 1)
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
-		Context(`Successfully - Returns the requested Occurrence`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -689,12 +794,19 @@ var _ = Describe(`FindingsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - Returns the requested Occurrence`, func() {
 			It(`Succeed to call GetOccurrence`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -726,7 +838,7 @@ var _ = Describe(`FindingsApiV1`, func() {
 		})
 	})
 	Describe(`UpdateOccurrence(updateOccurrenceOptions *UpdateOccurrenceOptions)`, func() {
-		updateOccurrencePath := "/v1/{account_id}/providers/{provider_id}/occurrences/{occurrence_id}"
+		updateOccurrencePath := "/v1{account_id}/providers/{provider_id}/occurrences/{occurrence_id}"
 		accountID := "exampleString"
 		providerID := "exampleString"
 		occurrenceID := "exampleString"
@@ -739,8 +851,9 @@ var _ = Describe(`FindingsApiV1`, func() {
 		time := strfmt.DateTime(time.Now())
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
-		Context(`Successfully - Updates an existing Occurrence`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -750,12 +863,19 @@ var _ = Describe(`FindingsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{"note_name": "fake_NoteName", "kind": "FINDING_COUNT", "id": "fake_ID"}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - Updates an existing Occurrence`, func() {
 			It(`Succeed to call UpdateOccurrence`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -806,7 +926,7 @@ var _ = Describe(`FindingsApiV1`, func() {
 		})
 	})
 	Describe(`DeleteOccurrence(deleteOccurrenceOptions *DeleteOccurrenceOptions)`, func() {
-		deleteOccurrencePath := "/v1/{account_id}/providers/{provider_id}/occurrences/{occurrence_id}"
+		deleteOccurrencePath := "/v1{account_id}/providers/{provider_id}/occurrences/{occurrence_id}"
 		accountID := "exampleString"
 		providerID := "exampleString"
 		occurrenceID := "exampleString"
@@ -815,8 +935,9 @@ var _ = Describe(`FindingsApiV1`, func() {
 		deleteOccurrencePath = strings.Replace(deleteOccurrencePath, "{occurrence_id}", occurrenceID, 1)
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
-		Context(`Successfully - Deletes the given Occurrence from the system`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -824,12 +945,19 @@ var _ = Describe(`FindingsApiV1`, func() {
 				Expect(req.Method).To(Equal("DELETE"))
 				res.WriteHeader(200)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - Deletes the given Occurrence from the system`, func() {
 			It(`Succeed to call DeleteOccurrence`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -858,13 +986,14 @@ var _ = Describe(`FindingsApiV1`, func() {
 		})
 	})
 	Describe(`ListProviders(listProvidersOptions *ListProvidersOptions)`, func() {
-		listProvidersPath := "/v1/{account_id}/providers"
+		listProvidersPath := "/v1{account_id}/providers"
 		accountID := "exampleString"
 		listProvidersPath = strings.Replace(listProvidersPath, "{account_id}", accountID, 1)
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
-		Context(`Successfully - Lists all Providers for a given account id`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -874,12 +1003,19 @@ var _ = Describe(`FindingsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "",
+				"si_findings_endpoint_url": "` + testServer.URL + `",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - Lists all Providers for a given account id`, func() {
 			It(`Succeed to call ListProviders`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -913,10 +1049,14 @@ var _ = Describe(`FindingsApiV1`, func() {
 	})
 	Describe("Model constructor tests", func() {
 		Context("with a sample service", func() {
-			testService, _ := findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
-				URL:           "http://findingsapiv1modelgenerator.com",
-				Authenticator: &core.NoAuthAuthenticator{},
+			var testService *findingsapiv1.FindingsApiV1
+			BeforeEach(func() {
+				testService, _ = findingsapiv1.NewFindingsApiV1(&findingsapiv1.FindingsApiV1Options{
+					URL:           "http://findingsapiv1modelgenerator.com",
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
+				})
 			})
+
 			It("should call NewCard successfully", func() {
 				section := "exampleString"
 				title := "exampleString"

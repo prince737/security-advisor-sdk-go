@@ -21,9 +21,9 @@ var (
 	selectedLocationID   string
 	token                string
 	ls                   locationSettings
+	//AdminServiceURL URL of the admin service
+	AdminServiceURL string = "https://compliance.cloud.ibm.com/admin/v1"
 )
-
-const adminServiceURL = "https://dev.compliance.test.cloud.ibm.com/admin/v1"
 
 type locationSettings struct {
 	Location locationDetails `json:"location"`
@@ -79,23 +79,23 @@ func GetServiceURL(Authenticator core.Authenticator, service string) (string, er
 	}
 
 	client := &http.Client{}
-	locationDetails := locationDetails{}
-	req, _ := http.NewRequest("GET", adminServiceURL+"/locations/"+location, nil)
+	// locationDetails := locationDetails{}
+	req, _ := http.NewRequest("GET", AdminServiceURL+"/locations/"+location, nil)
 	res, _ := makeRequest(client, req, bearerToken, accountID)
 	if res.StatusCode > 399 {
 		err := fmt.Errorf("%s %s", errFetchingLocation, http.StatusText(res.StatusCode))
 		return "", err
 	}
-	json.NewDecoder(res.Body).Decode(&locationDetails)
+	json.NewDecoder(res.Body).Decode(&ls.Location)
 	if service == "notifications_api" {
-		return locationDetails.NotificationsServiceURL, nil
+		return ls.Location.NotificationsServiceURL, nil
 	}
-	return locationDetails.FindingsServiceURL, nil
+	return ls.Location.FindingsServiceURL, nil
 }
 
 func getLocation() (string, error) {
 	client := &http.Client{}
-	req, _ := http.NewRequest("GET", adminServiceURL+"/accounts/"+accountID+"/settings", nil)
+	req, _ := http.NewRequest("GET", AdminServiceURL+"/accounts/"+accountID+"/settings", nil)
 	res, _ := makeRequest(client, req, bearerToken, accountID)
 	if res.StatusCode > 399 {
 		err := fmt.Errorf("%s %s", errFetchingLocation, http.StatusText(res.StatusCode))
@@ -110,12 +110,12 @@ func getLocation() (string, error) {
 //VerifyLocation returns true if specified url is from proper location
 func VerifyLocation(serviceURL string, service string) (bool, error) {
 	var expectedURL string
+	expectedURL = ls.Location.FindingsServiceURL
 	if service == "notifications_api" {
 		expectedURL = ls.Location.NotificationsServiceURL
 	}
-	expectedURL = ls.Location.FindingsServiceURL
 	if expectedURL != serviceURL {
-		err := fmt.Errorf("%s %s", errIncorrectLocation, serviceURL)
+		err := fmt.Errorf("%s %s", errIncorrectLocation, expectedURL)
 		return false, err
 	}
 	return true, nil

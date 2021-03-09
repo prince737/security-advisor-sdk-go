@@ -87,7 +87,7 @@ func TestServiceSetupWithExternalConfig(t *testing.T) {
 	if err != nil {
 		fmt.Println("Failed to load external config: ", err)
 	}
-
+	assert.Equal(t, testService.Service.GetServiceURL(), "https://us-south.secadvisor.cloud.ibm.com/notifications")
 	assert.NotNil(t, testService)
 }
 
@@ -103,13 +103,31 @@ func TestServiceSetupAndSetUrl(t *testing.T) {
 		t.Fatal("Expected service to not be nil, but got: ", service)
 	}
 
-	testService.SetServiceURL("https://dev-dallas.secadvisor.test.cloud.ibm.com/notifications")
+	testService.SetServiceURL("https://us-south.secadvisor.cloud.ibm.com/notifications")
 
-	assert.Equal(t, testService.Service.Options.URL, "https://dev-dallas.secadvisor.test.cloud.ibm.com/notifications")
+	assert.Equal(t, testService.Service.Options.URL, "https://us-south.secadvisor.cloud.ibm.com/notifications")
 	if err != nil {
 		t.Fatal("expected testServiceErr to be nil, but got: ", err)
 	}
+}
 
+func TestServiceSetupAndIncorrectSetUrl(t *testing.T) {
+	defer func() {
+		err := recover().(error)
+		assert.Equal(t, err.Error(), "Service URL specified is incorrect for the selected location. Correct URL is:  https://us-south.secadvisor.cloud.ibm.com/notifications")
+	}()
+	authenticator := &core.IamAuthenticator{
+		ApiKey: apiKey,
+		URL:    URL,
+	}
+	testService, _ := notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
+		Authenticator: authenticator,
+	})
+	if testService == nil {
+		t.Fatal("Expected service to not be nil, but got: ", service)
+	}
+
+	testService.SetServiceURL("https://eu-gb.secadvisor.cloud.ibm.com/notifications")
 }
 
 func TestServiceSetup(t *testing.T) { //This is required for tests that follow
@@ -405,9 +423,9 @@ func TestGetChannelFailureWithInvalidId(t *testing.T) {
 
 	t.Log("Failed to get channel: ", operationErr)
 	assert.Nil(t, result)
-	assert.Equal(t, resp.StatusCode, 500)
+	assert.Equal(t, resp.StatusCode, 404)
 	assert.NotNil(t, operationErr)
-	assert.Equal(t, operationErr.Error(), "Internal Server Error")
+	assert.Equal(t, operationErr.Error(), "Channels not found.")
 
 }
 
@@ -524,9 +542,9 @@ func TestTestChannelFailureWithInvalidId(t *testing.T) {
 
 	t.Log("Failed to get channel: ", operationErr)
 	assert.Nil(t, result)
-	assert.Equal(t, resp.StatusCode, 500)
+	assert.Equal(t, resp.StatusCode, 404)
 	assert.NotNil(t, operationErr)
-	assert.Equal(t, operationErr.Error(), "Internal Server Error")
+	assert.Equal(t, operationErr.Error(), "Channels not found.")
 
 }
 

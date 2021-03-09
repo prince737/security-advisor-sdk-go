@@ -23,10 +23,33 @@ import (
 	"strings"
 
 	"github.com/IBM/go-sdk-core/v3/core"
+	common "github.com/ibm-cloud-security/security-advisor-sdk-go/common"
+	"github.com/ibm-cloud-security/security-advisor-sdk-go/notificationsapiv1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/ibm-cloud-security/security-advisor-sdk-go/notificationsapiv1"
 )
+
+var mockToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50Ijp7InZhbGlkIjp0cnVlLCJic3MiOiIxMjMiLCJmcm96ZW4iOnRydWV9fQ.fg7gqslY47Y5pjt5euyCUO4xqfJK1ingI84WPqC52BY"
+var locationResp string
+
+var _ = BeforeSuite(func() {
+
+	ts := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		defer GinkgoRecover()
+		res.Header().Set("Content-type", "application/json")
+		res.WriteHeader(200)
+		if req.URL.Path == "/accounts/123/settings" {
+			fmt.Fprintf(res, `{
+				"location": {
+				  "id": "us"
+				}
+			  }`)
+		} else if req.URL.Path == "/locations/us" {
+			fmt.Fprintf(res, locationResp)
+		}
+	}))
+	common.AdminServiceURL = ts.URL
+})
 
 var _ = Describe(`NotificationsApiV1`, func() {
 	Describe(`ListAllChannels(listAllChannelsOptions *ListAllChannelsOptions)`, func() {
@@ -35,23 +58,29 @@ var _ = Describe(`NotificationsApiV1`, func() {
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
 		listAllChannelsPath = strings.Replace(listAllChannelsPath, "{account_id}", accountID, 1)
-		Context(`Successfully - list all channels`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
-
-				// Verify the contents of the request
-				Expect(req.URL.Path).To(Equal(listAllChannelsPath))
-				Expect(req.Method).To(Equal("GET"))
 				res.Header().Set("Content-type", "application/json")
 				res.WriteHeader(200)
+				Expect(req.URL.Path).To(Equal(listAllChannelsPath))
+				// Expect(req.Method).To(Equal("GET"))
 				fmt.Fprintf(res, `{}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "` + testServer.URL + `",
+				"si_findings_endpoint_url": "",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - list all channels`, func() {
+
 			It(`Succeed to call ListAllChannels`, func() {
 				defer testServer.Close()
-
 				testService, testServiceErr := notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -91,23 +120,29 @@ var _ = Describe(`NotificationsApiV1`, func() {
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
 		createNotificationChannelPath = strings.Replace(createNotificationChannelPath, "{account_id}", accountID, 1)
-		Context(`Successfully - create notification channel`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
-
-				// Verify the contents of the request
-				Expect(req.URL.Path).To(Equal(createNotificationChannelPath))
-				Expect(req.Method).To(Equal("POST"))
 				res.Header().Set("Content-type", "application/json")
 				res.WriteHeader(200)
+				Expect(req.URL.Path).To(Equal(createNotificationChannelPath))
+				Expect(req.Method).To(Equal("POST"))
 				fmt.Fprintf(res, `{}`)
 			}))
+			locationResp = `{
+					"si_notifications_endpoint_url": "` + testServer.URL + `",
+					"si_findings_endpoint_url": "",
+					"id": "us"
+				  }`
+		})
+		Context(`Successfully - create notification channel`, func() {
+
 			It(`Succeed to call CreateNotificationChannel`, func() {
 				defer testServer.Close()
-
 				testService, testServiceErr := notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -159,7 +194,7 @@ var _ = Describe(`NotificationsApiV1`, func() {
 
 				testService, testServiceErr := notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -197,23 +232,30 @@ var _ = Describe(`NotificationsApiV1`, func() {
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
 		deleteNotificationChannelsPath = strings.Replace(deleteNotificationChannelsPath, "{account_id}", accountID, 1)
-		Context(`Successfully - bulk delete of channels`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
-
-				// Verify the contents of the request
-				Expect(req.URL.Path).To(Equal(deleteNotificationChannelsPath))
-				Expect(req.Method).To(Equal("DELETE"))
 				res.Header().Set("Content-type", "application/json")
 				res.WriteHeader(200)
+				Expect(req.URL.Path).To(Equal(deleteNotificationChannelsPath))
 				fmt.Fprintf(res, `{}`)
+
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "` + testServer.URL + `",
+				"si_findings_endpoint_url": "",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - bulk delete of channels`, func() {
+
 			It(`Succeed to call DeleteNotificationChannels`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -250,23 +292,29 @@ var _ = Describe(`NotificationsApiV1`, func() {
 		headers["Content-Type"] = "application/json"
 		deleteNotificationChannelPath = strings.Replace(deleteNotificationChannelPath, "{account_id}", accountID, 1)
 		deleteNotificationChannelPath = strings.Replace(deleteNotificationChannelPath, "{channel_id}", channelID, 1)
-		Context(`Successfully - delete the details of a specific channel`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServerDeleteNotificationChannel *httptest.Server
+		BeforeEach(func() {
+			testServerDeleteNotificationChannel = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
-
-				// Verify the contents of the request
-				Expect(req.URL.Path).To(Equal(deleteNotificationChannelPath))
-				Expect(req.Method).To(Equal("DELETE"))
 				res.Header().Set("Content-type", "application/json")
 				res.WriteHeader(200)
+				Expect(req.URL.Path).To(Equal(deleteNotificationChannelPath))
+				Expect(req.Method).To(Equal("DELETE"))
 				fmt.Fprintf(res, `{}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "` + testServerDeleteNotificationChannel.URL + `",
+				"si_findings_endpoint_url": "",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - delete the details of a specific channel`, func() {
 			It(`Succeed to call DeleteNotificationChannel`, func() {
-				defer testServer.Close()
+				defer testServerDeleteNotificationChannel.Close()
 
 				testService, testServiceErr := notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
-					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					URL:           testServerDeleteNotificationChannel.URL,
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -303,8 +351,9 @@ var _ = Describe(`NotificationsApiV1`, func() {
 		headers["Content-Type"] = "application/json"
 		getNotificationChannelPath = strings.Replace(getNotificationChannelPath, "{account_id}", accountID, 1)
 		getNotificationChannelPath = strings.Replace(getNotificationChannelPath, "{channel_id}", channelID, 1)
-		Context(`Successfully - get the details of a specific channel`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -314,12 +363,19 @@ var _ = Describe(`NotificationsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "` + testServer.URL + `",
+				"si_findings_endpoint_url": "",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - get the details of a specific channel`, func() {
 			It(`Succeed to call GetNotificationChannel`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -359,8 +415,9 @@ var _ = Describe(`NotificationsApiV1`, func() {
 		headers["Content-Type"] = "application/json"
 		updateNotificationChannelPath = strings.Replace(updateNotificationChannelPath, "{account_id}", accountID, 1)
 		updateNotificationChannelPath = strings.Replace(updateNotificationChannelPath, "{channel_id}", channelID, 1)
-		Context(`Successfully - update notification channel`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -370,12 +427,20 @@ var _ = Describe(`NotificationsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "` + testServer.URL + `",
+				"si_findings_endpoint_url": "",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - update notification channel`, func() {
+
 			It(`Succeed to call UpdateNotificationChannel`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -433,8 +498,9 @@ var _ = Describe(`NotificationsApiV1`, func() {
 		headers["Content-Type"] = "application/json"
 		testNotificationChannelPath = strings.Replace(testNotificationChannelPath, "{account_id}", accountID, 1)
 		testNotificationChannelPath = strings.Replace(testNotificationChannelPath, "{channel_id}", channelID, 1)
-		Context(`Successfully - test notification channel`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -444,12 +510,20 @@ var _ = Describe(`NotificationsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "` + testServer.URL + `",
+				"si_findings_endpoint_url": "",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - test notification channel`, func() {
+
 			It(`Succeed to call TestNotificationChannel`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -484,8 +558,9 @@ var _ = Describe(`NotificationsApiV1`, func() {
 		headers := make(map[string]string)
 		headers["Content-Type"] = "application/json"
 		getPublicKeyPath = strings.Replace(getPublicKeyPath, "{account_id}", accountID, 1)
-		Context(`Successfully - fetch notifications public key`, func() {
-			testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		var testServer *httptest.Server
+		BeforeEach(func() {
+			testServer = httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 				defer GinkgoRecover()
 
 				// Verify the contents of the request
@@ -495,12 +570,20 @@ var _ = Describe(`NotificationsApiV1`, func() {
 				res.WriteHeader(200)
 				fmt.Fprintf(res, `{"publicKey": "fake_PublicKey"}`)
 			}))
+			locationResp = `{
+				"si_notifications_endpoint_url": "` + testServer.URL + `",
+				"si_findings_endpoint_url": "",
+				"id": "us"
+			  }`
+		})
+		Context(`Successfully - fetch notifications public key`, func() {
+
 			It(`Succeed to call GetPublicKey`, func() {
 				defer testServer.Close()
 
 				testService, testServiceErr := notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
 					URL:           testServer.URL,
-					Authenticator: &core.NoAuthAuthenticator{},
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
 				})
 				Expect(testServiceErr).To(BeNil())
 				Expect(testService).ToNot(BeNil())
@@ -530,11 +613,11 @@ var _ = Describe(`NotificationsApiV1`, func() {
 	})
 	Describe("Model constructor tests", func() {
 		Context("with a sample service", func() {
-			testService, _ := notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
-				URL:           "http://notificationsapiv1modelgenerator.com",
-				Authenticator: &core.NoAuthAuthenticator{},
-			})
 			It("should call NewNotificationChannelAlertSourceItem successfully", func() {
+				testService, _ := notificationsapiv1.NewNotificationsApiV1(&notificationsapiv1.NotificationsApiV1Options{
+					URL:           "http://notificationsapiv1modelgenerator.com",
+					Authenticator: &core.BearerTokenAuthenticator{BearerToken: mockToken},
+				})
 				providerName := "exampleString"
 				model, err := testService.NewNotificationChannelAlertSourceItem(providerName)
 				Expect(model).ToNot(BeNil())
